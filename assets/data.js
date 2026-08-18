@@ -2,6 +2,7 @@
 const SESSIONS = [
   {
     id: "running",
+    img: "assets/running.png",
     tag: "러닝",
     title: "한강 저녁 러닝 세션 (5km 초급)",
     host: "프롬더허들 인증 호스트",
@@ -15,6 +16,7 @@ const SESSIONS = [
   },
   {
     id: "climbing",
+    img: "assets/climbing.png",
     tag: "클라이밍",
     title: "실내 클라이밍 입문 세션",
     host: "프롬더허들 인증 호스트",
@@ -28,6 +30,7 @@ const SESSIONS = [
   },
   {
     id: "book",
+    img: "assets/read.png",
     tag: "독서",
     title: "주말 아침 독서 모임 세션",
     host: "프롬더허들 인증 호스트",
@@ -41,18 +44,7 @@ const SESSIONS = [
   }
 ];
 function svgArt(s, h){
-  const uid = s.id;
-  const shapes = {
-    run:  `<path d="M0 ${h*0.78} Q 120 ${h*0.45} 260 ${h*0.7} T 520 ${h*0.55} V ${h} H 0 Z" fill="rgba(255,255,255,.22)"/><circle cx="430" cy="${h*0.3}" r="34" fill="rgba(255,255,255,.5)"/>`,
-    climb:`<path d="M40 ${h} L 190 ${h*0.18} L 340 ${h} Z" fill="rgba(255,255,255,.28)"/><path d="M260 ${h} L 400 ${h*0.4} L 520 ${h} Z" fill="rgba(255,255,255,.16)"/><circle cx="196" cy="${h*0.42}" r="9" fill="#fff"/><circle cx="238" cy="${h*0.6}" r="9" fill="#fff"/>`,
-    book: `<rect x="150" y="${h*0.3}" width="100" height="${h*0.5}" rx="6" fill="rgba(255,255,255,.5)"/><rect x="262" y="${h*0.22}" width="100" height="${h*0.58}" rx="6" fill="rgba(255,255,255,.3)"/><line x1="170" y1="${h*0.42}" x2="230" y2="${h*0.42}" stroke="rgba(30,40,60,.35)" stroke-width="5"/><line x1="170" y1="${h*0.52}" x2="230" y2="${h*0.52}" stroke="rgba(30,40,60,.25)" stroke-width="5"/>`
-  };
-  return `<svg class="thumb" viewBox="0 0 520 ${h}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${s.tag} 세션 대표 이미지">
-    <defs><linearGradient id="g-${uid}-${h}" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="${s.grad[0]}"/><stop offset="1" stop-color="${s.grad[1]}"/>
-    </linearGradient></defs>
-    <rect width="520" height="${h}" fill="url(#g-${uid}-${h})"/>${shapes[s.art]}
-  </svg>`;
+  return `<img class="thumb" src="${s.img}" alt="${s.tag} 세션 대표 이미지">`;
 }
 function won(n){ return n.toLocaleString("ko-KR") + "원"; }
 function getSession(){

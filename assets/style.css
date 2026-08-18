@@ -41,7 +41,7 @@ h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .card{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fff;transition:box-shadow .15s,transform .15s}
 .card:hover{box-shadow:0 8px 24px rgba(20,62,48,.10);transform:translateY(-2px)}
-.thumb{height:150px}
+.thumb{height:150px;width:100%;object-fit:cover}
 .card-body{padding:18px}
 .tag{display:inline-block;font-size:12px;font-weight:700;color:var(--pine);background:#E7F0EB;border-radius:6px;padding:3px 8px;margin-bottom:8px}
 .card-body h3{font-size:17px;font-weight:700;letter-spacing:-.01em}
