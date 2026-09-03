@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   <footer><div class="wrap">
     <div class="f-brand">플래닛피플</div>
     <div class="f-info">
-      상호 : 플래닛피플 &nbsp;|&nbsp; 대표 : 김존<br>
+      상호 : 프롬더허들 &nbsp;|&nbsp; 대표 : 김존<br>
       사업자등록번호 : 413-01-65526 &nbsp;|&nbsp; 통신판매업신고 : 2025-대전유성-0700<br>
       주소 : (34134) 대전 유성구 대학로 99, 충남대학교 산학연교육연구관 별관동 3층 309-1호<br>
       전화 : 010-5062-1625
