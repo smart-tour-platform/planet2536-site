@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   </div></div>`;
   const footer = `
   <footer><div class="wrap">
-    <div class="f-brand">플래닛피플</div>
+    <div class="f-brand">운영사-프롬더허들</div>
     <div class="f-info">
       상호 : 프롬더허들 &nbsp;|&nbsp; 대표 : 김존<br>
       사업자등록번호 : 413-01-65526 &nbsp;|&nbsp; 통신판매업신고 : 2025-대전유성-0700<br>
