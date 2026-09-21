@@ -5,6 +5,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('o-price').textContent = won(s.price);
   document.getElementById('o-total').textContent = won(s.price) + ' (최종 금액)';
   document.getElementById('o-schedule').textContent = scheduleText(s);
+  document.getElementById('o-participation').textContent = participationLabel(s);
+  document.getElementById('payment-scope').textContent = paymentScopeText(s);
+  document.getElementById('agree-once-text').textContent = s.productType === 'term'
+    ? `[필수] ${s.termNumber}차수의 모임 ${s.meetings.length}회 전체에 대해 총 ${won(s.price)}을 한 번 결제하며, 다음 차수는 자동 결제되지 않음을 확인했습니다.`
+    : `[필수] 모임 1회에 대해 총 ${won(s.price)}을 한 번 결제하며, 자동 결제되지 않음을 확인했습니다.`;
   renderPurchaseInfo('o-details', s);
   document.getElementById('refund-summary').textContent = POLICY.summary;
   if (saleLabel(s) !== '신청 가능') { status.textContent = saleLabel(s) + '입니다. 표시된 신청 기간을 확인해 주세요.'; return; }

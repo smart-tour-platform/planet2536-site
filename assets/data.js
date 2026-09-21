@@ -83,7 +83,15 @@ function saleLabel(s, now = Date.now()) {
 }
 if (typeof module !== 'undefined') module.exports = { SESSIONS, SALE_LIMITS };
 function svgArt(s) {
-  return `<div class="session-art" style="background:linear-gradient(135deg,${s.grad[0]},${s.grad[1]})"><span>${s.productType === 'term' ? '차수형' : '단발형'} · ${s.meetings.length}회</span><strong>함께하는 ${s.tag}</strong><small>${s.purchaseScope}</small></div>`;
+  return `<div class="session-art" style="background:linear-gradient(135deg,${s.grad[0]},${s.grad[1]})"><span>${participationLabel(s)}</span><strong>함께하는 ${s.tag}</strong><small>${s.purchaseScope}</small></div>`;
+}
+function participationLabel(s) {
+  return s.productType === 'term' ? `차수형 · ${s.termNumber}차수 · 총 ${s.meetings.length}회` : '단발형 · 총 1회';
+}
+function paymentScopeText(s) {
+  return s.productType === 'term'
+    ? `이번 결제는 ${s.termNumber}차수 전체 참여비 ${won(s.price)}입니다. 아래 일정의 모임 ${s.meetings.length}회가 모두 포함됩니다. 회차마다 이 금액을 다시 내지 않습니다. 다른 차수는 포함되지 않으며, 다음 차수는 별도 신청·결제가 필요합니다. 자동 결제는 없습니다.`
+    : `이번 결제는 아래 일정의 모임 1회 참여비 ${won(s.price)}입니다. 자동 결제는 없습니다.`;
 }
 function won(n) { return n.toLocaleString('ko-KR') + '원'; }
 function getSession() { return SESSIONS.find(s => s.id === new URLSearchParams(location.search).get('id')); }

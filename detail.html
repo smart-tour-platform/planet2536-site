@@ -3,7 +3,7 @@
 <main><div class="wrap detail-top"><div><div class="detail-thumb" id="d-thumb"></div>
 <div class="notice"><b>서비스 제공 방식</b><br>실물 배송이 없는 오프라인 모임 참여 서비스입니다. 결제 승인이 완료되면 참여 신청이 접수됩니다. 모임 진행 확정은 모집 결과에 따라 별도로 안내합니다. 최종적으로 모임이 취소되면 해당 결제분을 전액 환불합니다.</div></div>
 <div><span class="tag" id="d-tag"></span><h1 id="d-title"></h1>
-<p id="d-price" class="price"></p><p id="d-schedule"></p><p id="d-people"></p>
+<p id="d-price" class="price"></p><div class="notice"><b>이번 결제에 포함되는 모임</b><p id="payment-scope"></p></div><p id="d-schedule"></p><p id="d-people"></p>
 <table class="info-table" id="d-details"></table><p id="d-desc"></p>
 <div class="notice"><b>취소·환불 안내</b><p id="refund-summary"></p><a href="refund.html">정책 및 예외 기준 확인</a></div>
 <p>개별 결제일부터 해당 결제분 최종 모임 종료까지 최대 70일 이내에 제공합니다. 자동 정기결제는 없습니다.</p>
@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   for(const key of ['tag','title','desc','people']) document.getElementById('d-'+key).textContent=s[key];
   document.getElementById('d-price').textContent=won(s.price)+' / '+s.purchaseScope;
   document.getElementById('d-schedule').textContent=scheduleText(s);
+  document.getElementById('d-tag').textContent=s.tag+' · '+participationLabel(s);
+  document.getElementById('payment-scope').textContent=paymentScopeText(s);
   document.getElementById('refund-summary').textContent=POLICY.summary;
   renderPurchaseInfo('d-details',s);
   const open=saleLabel(s)==='신청 가능';
