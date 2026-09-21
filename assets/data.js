@@ -31,11 +31,35 @@ const SESSIONS = [
     grad: ['#233D65', '#829CC2']
   }
 ];
+function dateParts(value) {
+  return Object.fromEntries(new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric',
+    weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date(value)).map(p => [p.type, p.value]));
+}
+function shortDate(d, withYear = false) {
+  return `${withYear ? d.year + '년 ' : ''}${d.month}월 ${d.day}일(${d.weekday})`;
+}
+function clockTime(d) { return `${d.hour}:${d.minute}`; }
 function formatDate(value) {
-  return value ? new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false }) + ' (한국시간)' : '—';
+  if (!value) return '—';
+  const d = dateParts(value);
+  return `${shortDate(d, true)} ${clockTime(d)}`;
 }
 function scheduleText(s) {
-  return s.meetings.map((m, i) => `${i + 1}회: ${formatDate(m.startAt)} ~ ${formatDate(m.endAt)}`).join('\n');
+  const meetings = s.meetings.map(m => ({ start: dateParts(m.startAt), end: dateParts(m.endAt) }));
+  const years = new Set(meetings.flatMap(m => [m.start.year, m.end.year]));
+  const header = years.size === 1 ? `${meetings[0].start.year}년 · 한국시간` : '한국시간';
+  return [header, ...meetings.map(({ start, end }, i) => {
+    const sameDay = ['year', 'month', 'day'].every(k => start[k] === end[k]);
+    const endLabel = sameDay ? clockTime(end) : `${shortDate(end, years.size > 1)} ${clockTime(end)}`;
+    return `${i + 1}회 · ${shortDate(start, years.size > 1)} ${clockTime(start)}–${endLabel}`;
+  })].join('\n');
+}
+function scheduleSummary(s) {
+  if (s.meetings.length === 1) return scheduleText(s);
+  const first = dateParts(s.meetings[0].startAt), last = dateParts(s.meetings.at(-1).endAt);
+  return `${first.year}년 · 한국시간\n${first.month}/${first.day}–${first.year !== last.year ? last.year + '/' : ''}${last.month}/${last.day} · 총 ${s.meetings.length}회`;
 }
 function saleLabel(s, now = Date.now()) {
   if (now >= Date.parse(s.deadlineAt)) return '신청 마감';

@@ -92,6 +92,9 @@ h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
 .policy-table{overflow-x:auto}.policy-table td{vertical-align:top;min-width:110px;overflow-wrap:anywhere}
 #d-schedule,#o-schedule,.card .meta,#order-details{white-space:pre-line}
 #o-schedule{min-width:0;font-size:13px}.checkout .info-table{width:100%}
+#d-schedule{padding:16px 18px;background:var(--bg-tint);border-radius:12px;font-size:14px;line-height:2.1;font-variant-numeric:tabular-nums}
+.row #o-schedule{text-align:left;line-height:2;font-variant-numeric:tabular-nums}
+.row:has(#o-schedule){flex-direction:column;gap:4px}
 footer{border-top:1px solid var(--line);background:var(--bg-tint);margin-top:40px}
 footer .wrap{padding:34px 20px 44px}
 .f-brand{font-weight:800;color:var(--pine-deep);margin-bottom:12px}

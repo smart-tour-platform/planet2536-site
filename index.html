@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       <div class="card-body">
         <span class="tag">${s.tag}</span>
         <h3>${s.title}</h3>
-        <div class="meta">${scheduleText(s)}</div>
+        <div class="meta">${scheduleSummary(s)}</div>
         <div class="price">${won(s.price)} <small>/ ${s.purchaseScope} · ${saleLabel(s)}</small></div>
       </div>
     </a>`).join("");
