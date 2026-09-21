@@ -18,8 +18,8 @@ const SESSIONS = [
   },
   {
     ...RUNNING, id: 'running-term-1', productType: 'term', programId: 'running-october', termNumber: 1,
-    title: '10월 화요일 러닝 — 1차수 4회', price: 15600,
-    purchaseScope: '차수형 · 1차수 · 총 4회 참여',
+    title: '10월 화요일 러닝 — 4주간 주 1회', price: 15600,
+    purchaseScope: '1차수 전체 · 4주간 주 1회 · 총 4회 참여',
     meetings: [
       { startAt: '2026-10-06T19:30:00+09:00', endAt: '2026-10-06T21:00:00+09:00' },
       { startAt: '2026-10-13T19:30:00+09:00', endAt: '2026-10-13T21:00:00+09:00' },
@@ -27,13 +27,13 @@ const SESSIONS = [
       { startAt: '2026-10-27T19:30:00+09:00', endAt: '2026-10-27T21:00:00+09:00' }
     ],
     deadlineAt: '2026-10-05T19:30:00+09:00',
-    desc: '10월 매주 화요일, 총 4회의 초급 그룹 러닝에 참여합니다. 15,600원을 한 번 결제하면 10월 6·13·20·27일 모임이 모두 포함됩니다. 다음 차수는 자동 결제되지 않습니다.',
+    desc: '4주간 매주 화요일에 한 번씩 만나는 초급 그룹 러닝입니다. 10월 6·13·20·27일의 모임 4회를 하나의 결제 단위인 1차수로 묶었습니다. 15,600원을 한 번 결제하면 4회 모두 참여합니다. 다음 차수는 자동 결제되지 않습니다.',
     grad: ['#233D65', '#829CC2']
   },
   {
     ...RUNNING, id: 'running-weekend-term-1', productType: 'term', programId: 'running-weekend-october', termNumber: 1,
-    title: '10월 토요일 아침 러닝 — 1차수 3회', price: 11700,
-    purchaseScope: '차수형 · 1차수 · 총 3회 참여',
+    title: '10월 토요일 아침 러닝 — 3주간 주 1회', price: 11700,
+    purchaseScope: '1차수 전체 · 3주간 주 1회 · 총 3회 참여',
     place: '서울 영등포구 여의도한강공원 — 여의나루역 2번 출구 앞 지상 집결, 08:50 출석 확인',
     meetings: [
       { startAt: '2026-10-10T09:00:00+09:00', endAt: '2026-10-10T10:30:00+09:00' },
@@ -41,7 +41,7 @@ const SESSIONS = [
       { startAt: '2026-10-24T09:00:00+09:00', endAt: '2026-10-24T10:30:00+09:00' }
     ],
     deadlineAt: '2026-10-09T09:00:00+09:00',
-    desc: '10월 토요일 아침, 초급 페이스로 함께 5km를 달리는 3회 과정입니다. 11,700원을 한 번 결제하면 10월 10·17·24일 모임이 모두 포함됩니다. 다음 차수는 자동 결제되지 않습니다.',
+    desc: '3주간 매주 토요일 아침에 한 번씩 만나 초급 페이스로 5km를 달립니다. 10월 10·17·24일의 모임 3회를 하나의 결제 단위인 1차수로 묶었습니다. 11,700원을 한 번 결제하면 3회 모두 참여합니다. 다음 차수는 자동 결제되지 않습니다.',
     grad: ['#865020', '#D8AE76']
   }
 ];
@@ -64,10 +64,11 @@ function scheduleText(s) {
   const meetings = s.meetings.map(m => ({ start: dateParts(m.startAt), end: dateParts(m.endAt) }));
   const years = new Set(meetings.flatMap(m => [m.start.year, m.end.year]));
   const header = years.size === 1 ? `${meetings[0].start.year}년 · 한국시간` : '한국시간';
-  return [header, ...meetings.map(({ start, end }, i) => {
+  const group = s.productType === 'term' ? [`${s.termNumber}차수에 포함된 모임 · 총 ${meetings.length}회`] : [];
+  return [...group, header, ...meetings.map(({ start, end }, i) => {
     const sameDay = ['year', 'month', 'day'].every(k => start[k] === end[k]);
     const endLabel = sameDay ? clockTime(end) : `${shortDate(end, years.size > 1)} ${clockTime(end)}`;
-    return `${i + 1}회 · ${shortDate(start, years.size > 1)} ${clockTime(start)}–${endLabel}`;
+    return `${i + 1}회차 · ${shortDate(start, years.size > 1)} ${clockTime(start)}–${endLabel}`;
   })].join('\n');
 }
 function scheduleSummary(s) {
