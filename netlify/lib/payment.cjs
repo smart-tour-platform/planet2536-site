@@ -4,10 +4,13 @@ const POLICY = require('../../assets/policy.js');
 const DAY = 86400000;
 function fail(message, status = 400) { throw Object.assign(new Error(message), { status }); }
 function config(env) {
-  if (env.PAYMENTS_ENABLED !== 'true' || !/^test_gck_/.test(env.TOSS_CLIENT_KEY || '') ||
-      !/^test_gsk_/.test(env.TOSS_SECRET_KEY || '') || /docs|REPLACE/.test(env.TOSS_CLIENT_KEY + env.TOSS_SECRET_KEY) ||
+  const mode = env.TOSS_MODE || 'test';
+  if (!['test', 'live'].includes(mode) || env.PAYMENTS_ENABLED !== 'true' ||
+      !new RegExp(`^${mode}_gck_.+`).test(env.TOSS_CLIENT_KEY || '') ||
+      !new RegExp(`^${mode}_gsk_.+`).test(env.TOSS_SECRET_KEY || '') || /docs|REPLACE/.test(env.TOSS_CLIENT_KEY + env.TOSS_SECRET_KEY) ||
       env.TOSS_MID !== 'spacew90od' || Buffer.from(env.ORDER_ENCRYPTION_KEY || '', 'base64').length !== 32)
     fail('현재 온라인 결제를 이용할 수 없습니다. 고객센터 010-5062-1625로 문의해 주세요.', 503);
+  return { mode };
 }
 function validateProduct(s, now, policy = POLICY) {
   if (!s || s.saleStatus !== 'open' || !s.host || !s.place ||

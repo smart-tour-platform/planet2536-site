@@ -25,7 +25,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     await widgets.renderPaymentMethods({ selector: '#payment-method', variantKey: config.paymentVariant });
     const agreement = await widgets.renderAgreement({ selector: '#agreement', variantKey: config.agreementVariant });
     agreement.on('agreementStatusChange', data => { tossAgreed = data.agreedRequiredTerms; sync(); });
-    ready = true; status.textContent = '테스트 결제입니다. 실제 금액은 청구되지 않습니다.'; sync();
+    ready = true;
+    status.textContent = config.mode === 'live'
+      ? '결제 수단과 구매 내용을 확인해 주세요. 결제를 완료하면 표시된 금액이 실제 청구됩니다.'
+      : '테스트 결제입니다. 실제 금액은 청구되지 않습니다.';
+    btn.textContent = won(s.price) + ' 결제하기';
+    sync();
   } catch (e) { status.textContent = e.message; }
   btn.addEventListener('click', async () => {
     if (btn.disabled) return;

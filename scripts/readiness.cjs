@@ -11,9 +11,9 @@ for (const s of opened) {
   catch (e) { problems.push(`${s.id}: ${e.message}`); }
 }
 try { config(process.env); }
-catch { problems.push('상점 테스트 키·MID·주문 암호화 키·PAYMENTS_ENABLED 설정 필요 (값은 출력하지 않음)'); }
+catch { problems.push('TOSS_MODE에 맞는 상점 키 쌍·MID·주문 암호화 키·PAYMENTS_ENABLED 설정 필요 (값은 출력하지 않음)'); }
 if (!['taxable', 'exempt', 'mixed'].includes(process.env.TOSS_TAX_MODE)) problems.push('상점 계약 과세 유형 TOSS_TAX_MODE 확인 필요');
 if (problems.length) {
-  console.log('테스트 결제 개방 대기:\n' + problems.map(p => '- ' + p).join('\n'));
+  console.log('결제 설정 확인 필요:\n' + problems.map(p => '- ' + p).join('\n'));
   process.exitCode = 1;
-} else console.log('로컬 필수 설정 충족. 배포 URL에서 실제 상점 테스트 승인·운영 절차를 별도로 확인하세요.');
+} else console.log(`로컬 필수 설정 충족 (${process.env.TOSS_MODE || 'test'}). 배포 URL의 상점 연결·승인 결과는 별도로 확인하세요.`);

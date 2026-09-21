@@ -53,6 +53,13 @@ test('draft, unreviewed policy and invalid dates blocked',()=>{
   assert.throws(()=>validateProduct(product,clock,{...policy,reviewed:false}));
 });
 test('live keys, docs keys and missing encryption key blocked',()=>{for(const change of [{TOSS_CLIENT_KEY:'live_gck_x'},{TOSS_CLIENT_KEY:'test_gck_docs_x'},{ORDER_ENCRYPTION_KEY:''}])assert.throws(()=>config({...env,...change}));});
+test('live mode requires an explicit mode and matching live key prefixes for the merchant',()=>{
+  const live = {...env,TOSS_MODE:'live',TOSS_CLIENT_KEY:'live_gck_shop',TOSS_SECRET_KEY:'live_gsk_shop'};
+  assert.equal(config(live).mode,'live');
+  assert.equal(config(env).mode,'test');
+  for (const change of [{TOSS_MODE:'test'},{TOSS_MODE:'invalid'},{TOSS_SECRET_KEY:'test_gsk_shop'},{TOSS_CLIENT_KEY:'test_gck_shop'},{TOSS_MID:'other'},{PAYMENTS_ENABLED:'false'}])
+    assert.throws(()=>config({...live,...change}));
+});
 test('990,000 won per-payment ceiling is inclusive',()=>{
   validateProduct({...product,price:990000},clock,policy);
   assert.throws(()=>validateProduct({...product,price:990001},clock,policy),/990,000/);
