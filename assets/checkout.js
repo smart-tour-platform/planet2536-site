@@ -1,46 +1,44 @@
-// [키 교체 지점] 아래는 토스페이먼츠 공식 문서의 공용 테스트 클라이언트 키입니다.
-// 전자계약 완료 후 상점관리자(MID: spacew90od) > 개발자센터에서 발급받은
-// "결제위젯 클라이언트 키(live_gck_... 또는 test_gck_...)"로 교체하세요.
-const CLIENT_KEY = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm";
-
-document.addEventListener("DOMContentLoaded", async () => {
-  const s = getSession();
-  document.getElementById("o-title").textContent = s.title;
-  document.getElementById("o-price").textContent = won(s.price);
-  document.getElementById("o-schedule").textContent = s.schedule;
-  document.getElementById("o-total").textContent = won(s.price);
-
-  const tossPayments = TossPayments(CLIENT_KEY);
-  const widgets = tossPayments.widgets({ customerKey: TossPayments.ANONYMOUS });
-  await widgets.setAmount({ currency: "KRW", value: s.price });
-  await Promise.all([
-    widgets.renderPaymentMethods({ selector: "#payment-method", variantKey: "DEFAULT" }),
-    widgets.renderAgreement({ selector: "#agreement", variantKey: "AGREEMENT" })
-  ]);
-
-  const btn = document.getElementById("pay-btn");
-  const boxes = [document.getElementById("agree-refund"), document.getElementById("agree-once")];
-  const sync = () => { btn.disabled = !boxes.every(b => b.checked); };
-  boxes.forEach(b => b.addEventListener("change", sync));
-
-  btn.addEventListener("click", async () => {
-    const name = document.getElementById("f-name").value.trim();
-    const phone = document.getElementById("f-phone").value.trim();
-    const email = document.getElementById("f-email").value.trim();
-    if (!name || !phone) { alert("이름과 휴대폰 번호를 입력해 주세요."); return; }
+document.addEventListener('DOMContentLoaded', async () => {
+  const s = getSession(), btn = document.getElementById('pay-btn'), status = document.getElementById('checkout-status');
+  if (!s) { status.textContent = '존재하지 않는 상품입니다.'; return; }
+  document.getElementById('o-title').textContent = s.title;
+  document.getElementById('o-price').textContent = won(s.price);
+  document.getElementById('o-total').textContent = won(s.price) + ' (최종 금액)';
+  document.getElementById('o-schedule').textContent = scheduleText(s);
+  renderPurchaseInfo('o-details', s);
+  document.getElementById('refund-summary').textContent = POLICY.summary;
+  if (s.saleStatus !== 'open') { status.textContent = '판매 준비 중입니다. 일정·호스트·장소 확정 후 신청할 수 있습니다.'; return; }
+  let widgets, ready = false, busy = false, tossAgreed = false;
+  const boxes = [...document.querySelectorAll('.agree input')];
+  const sync = () => { btn.disabled = busy || !ready || !tossAgreed || !boxes.every(b => b.checked); };
+  boxes.forEach(b => b.addEventListener('change', sync));
+  try {
+    const config = await paymentAPI();
+    if (config.policyVersion !== POLICY.version) throw new Error('정책이 변경되었습니다. 새로고침해 주세요.');
+    widgets = TossPayments(config.clientKey).widgets({ customerKey: TossPayments.ANONYMOUS });
+    await widgets.setAmount({ currency: 'KRW', value: s.price });
+    await widgets.renderPaymentMethods({ selector: '#payment-method', variantKey: config.paymentVariant });
+    const agreement = await widgets.renderAgreement({ selector: '#agreement', variantKey: config.agreementVariant });
+    agreement.on('agreementStatusChange', data => { tossAgreed = data.agreedRequiredTerms; sync(); });
+    ready = true; status.textContent = '테스트 결제입니다. 실제 금액은 청구되지 않습니다.'; sync();
+  } catch (e) { status.textContent = e.message; }
+  btn.addEventListener('click', async () => {
+    if (btn.disabled) return;
+    const fields = ['f-name', 'f-phone', 'f-email'].map(id => document.getElementById(id));
+    if (!fields.every(field => field.reportValidity())) return;
+    busy = true; sync();
     try {
-      await widgets.requestPayment({
-        orderId: "order-" + s.id + "-" + Date.now(),
-        orderName: s.title,
-        customerName: name,
-        customerEmail: email || undefined,
-        customerMobilePhone: phone.replace(/-/g, "") || undefined,
-        successUrl: location.origin + "/success.html",
-        failUrl: location.origin + "/fail.html"
-      });
-    } catch (e) {
-      // 사용자가 결제창을 닫은 경우 등 — 별도 처리 없음
-      console.log(e);
-    }
+      sessionStorage.setItem('pp-storage-check', '1'); sessionStorage.removeItem('pp-storage-check');
+      const [name, phone, email] = fields.map(f => f.value.trim());
+      const order = await paymentAPI({ action: 'create', productId: s.id, name, phone, email,
+        policyVersion: POLICY.version, agreements: { refund: true, once: true, privacy: true, terms: true } });
+      sessionStorage.setItem('pp-order-' + order.orderId, order.token);
+      await widgets.setAmount({ currency: 'KRW', value: order.amount });
+      await widgets.requestPayment({ orderId: order.orderId, orderName: order.title, customerName: name,
+        ...(order.taxFreeAmount ? { taxFreeAmount: order.taxFreeAmount } : {}),
+        ...(email ? { customerEmail: email } : {}), customerMobilePhone: phone.replace(/[-\s]/g, ''),
+        successUrl: location.origin + '/success.html', failUrl: location.origin + '/fail.html' });
+    } catch (e) { status.textContent = e.code === 'USER_CANCEL' ? '결제를 취소했습니다. 다시 시도할 수 있습니다.' : e.message; }
+    finally { busy = false; sync(); }
   });
 });

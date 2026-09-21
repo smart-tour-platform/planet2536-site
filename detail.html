@@ -1,47 +1,28 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"><link rel="stylesheet" href="assets/style.css"><script src="assets/data.js"></script><script src="assets/common.js"></script><title>세션 상세 — 플래닛피플</title></head>
-<body>
-<main>
-  <div class="wrap detail-top">
-    <div>
-      <div class="detail-thumb" id="d-thumb"></div>
-      <div class="notice">
-        <b>서비스 제공 방식 안내</b><br>
-        본 상품은 실물 배송이 없는 <b>오프라인 모임 참여 서비스</b>입니다. 결제 완료 시 신청이 접수되며, 최소 인원 충족으로 모임이 확정되면 문자·이메일로 상세 위치와 일정이 안내됩니다. 최소 인원 미달로 모임이 성사되지 않으면 참여비는 전액 환불됩니다.
-      </div>
-    </div>
-    <div>
-      <span class="tag" id="d-tag"></span>
-      <h1 style="font-size:26px" id="d-title"></h1>
-      <table class="info-table">
-        <tr><th>참여비</th><td id="d-price" style="font-weight:800;color:var(--amber)"></td></tr>
-        <tr><th>일정</th><td id="d-schedule"></td></tr>
-        <tr><th>장소</th><td id="d-place"></td></tr>
-        <tr><th>모집 인원</th><td id="d-people"></td></tr>
-        <tr><th>호스트</th><td id="d-host"></td></tr>
-        <tr><th>구매 자격</th><td>회원 · 비회원 모두 신청 가능</td></tr>
-        <tr><th>취소·환불</th><td>이용일 기준 10일 전까지 전액 환불, 이후 일별 차등 차감 — <a href="refund.html" style="color:var(--pine);font-weight:600">전체 규정 보기</a></td></tr>
-      </table>
-      <p id="d-desc" style="margin-top:16px;font-size:14.5px;color:var(--ink-soft)"></p>
-      <a class="btn block" id="d-buy" href="#">참여 신청하고 결제하기</a>
-    </div>
-  </div>
-</main>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><link rel="stylesheet" href="assets/style.css"><script src="assets/data.js"></script><script src="assets/policy.js"></script><script src="assets/purchase.js"></script><script src="assets/common.js"></script><title>세션 상세 — 플래닛피플</title></head><body>
+<main><div class="wrap detail-top"><div><div class="detail-thumb" id="d-thumb"></div>
+<div class="notice"><b>서비스 제공 방식</b><br>실물 배송이 없는 오프라인 모임 참여 서비스입니다. 결제 승인이 완료되면 참여 신청이 접수됩니다. 모임 진행 확정은 모집 결과에 따라 별도로 안내합니다. 최종적으로 모임이 취소되면 해당 결제분을 전액 환불합니다.</div></div>
+<div><span class="tag" id="d-tag"></span><h1 id="d-title"></h1>
+<p id="d-price" class="price"></p><p id="d-schedule"></p><p id="d-people"></p>
+<table class="info-table" id="d-details"></table><p id="d-desc"></p>
+<div class="notice"><b>취소·환불 안내</b><p id="refund-summary"></p><a href="refund.html">정책 및 예외 기준 확인</a></div>
+<p>개별 결제일부터 해당 결제분 최종 모임 종료까지 최대 70일 이내에 제공합니다. 자동 정기결제는 없습니다.</p>
+<p id="sale-status" role="status"></p><a class="btn block" id="d-buy" href="sessions.html">세션 목록으로</a></div></div></main>
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
-  const s = getSession();
-  document.title = s.title + " — 플래닛피플";
-  document.getElementById("d-thumb").innerHTML = svgArt(s,280);
-  document.getElementById("d-tag").textContent = s.tag;
-  document.getElementById("d-title").textContent = s.title;
-  document.getElementById("d-price").textContent = won(s.price) + " / 1회 참여 (VAT 포함)";
-  document.getElementById("d-schedule").textContent = s.schedule;
-  document.getElementById("d-place").textContent = s.place;
-  document.getElementById("d-people").textContent = s.people;
-  document.getElementById("d-host").textContent = s.host;
-  document.getElementById("d-desc").textContent = s.desc;
-  document.getElementById("d-buy").href = "checkout.html?id=" + s.id;
+document.addEventListener('DOMContentLoaded',()=>{
+  const s=getSession();
+  if(!s){document.getElementById('d-title').textContent='존재하지 않는 상품입니다';return;}
+  document.title=s.title+' — 플래닛피플';
+  document.getElementById('d-thumb').innerHTML=svgArt(s,280);
+  for(const key of ['tag','title','desc','people']) document.getElementById('d-'+key).textContent=s[key];
+  document.getElementById('d-price').textContent=won(s.price)+' / '+s.purchaseScope;
+  document.getElementById('d-schedule').textContent=scheduleText(s);
+  document.getElementById('refund-summary').textContent=POLICY.summary;
+  renderPurchaseInfo('d-details',s);
+  const open=s.saleStatus==='open' && POLICY.reviewed;
+  document.getElementById('sale-status').textContent=open?'비회원 신청 가능':'판매 준비 중 · 일정과 운영 정보 확정 후 신청이 열립니다.';
+  const buy=document.getElementById('d-buy');
+  buy.textContent=open?'참여 신청하고 결제하기':'신청 화면 미리보기';
+  buy.href='checkout.html?id='+encodeURIComponent(s.id);
 });
-</script>
-</body></html>
+</script></body></html>

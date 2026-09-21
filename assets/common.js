@@ -16,9 +16,11 @@ document.addEventListener("DOMContentLoaded", () => {
       사업자등록번호 : 413-01-65526 &nbsp;|&nbsp; 통신판매업신고 : 2025-대전유성-0700<br>
       주소 : (34134) 대전 유성구 대학로 99, 충남대학교 산학연교육연구관 별관동 3층 309-1호<br>
       전화 : 010-5062-1625
+      &nbsp;|&nbsp; 이메일 : <a href="mailto:john@fromthehurdle.com">john@fromthehurdle.com</a>
     </div>
     <div class="f-links">
       <a href="terms.html">이용약관</a>
+      <a href="host-terms.html">호스트 이용약관</a>
       <a href="privacy.html">개인정보처리방침</a>
       <a href="refund.html">취소·환불 규정</a>
     </div>

@@ -1,0 +1,16 @@
+{
+  "refund": {
+    "version": "1.5",
+    "path": "refund.html",
+    "sha256": "ed442dea0d493a5973e0aa075084234c6ddb7be00164e3ca3daad74e63556964",
+    "documentEffectiveDate": "2026-09-20",
+    "websiteEffectiveAt": null
+  },
+  "host": {
+    "version": "1.5",
+    "path": "host-terms.html",
+    "sha256": "e0c96f2167644b24baf8d7eaa29c4648610b307a899becc40701d7f37da8da1c",
+    "documentEffectiveDate": "2026-09-20",
+    "websiteEffectiveAt": null
+  }
+}

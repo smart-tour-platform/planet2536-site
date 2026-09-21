@@ -82,11 +82,19 @@ h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
 .rate-table td.pct{font-weight:700;color:var(--pine-deep)}
 .callout{border-left:3px solid var(--pine);background:var(--bg-tint);padding:14px 16px;border-radius:0 10px 10px 0;font-size:14px;margin:16px 0}
 /* footer */
+.session-art{min-height:190px;padding:30px 24px;color:white;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.session-art strong{font-size:28px}.session-art small{font-size:12px}.detail-thumb .session-art{min-height:280px}
+.detail-top h1{font-size:28px;margin:12px 0}.detail-top p{margin:12px 0}.row{gap:14px}.row span:last-child{text-align:right}
+#checkout-status{margin:16px 0}#order-details p{margin:12px 0}.info-table td{overflow-wrap:anywhere}
+[hidden]{display:none!important}
+.policy-source-page{padding:20px 0;border-top:1px solid var(--line)}
+.policy-source-page .source-paragraph{white-space:pre-line;margin:12px 0}
+.policy-table{overflow-x:auto}.policy-table td{vertical-align:top;min-width:110px;overflow-wrap:anywhere}
 footer{border-top:1px solid var(--line);background:var(--bg-tint);margin-top:40px}
 footer .wrap{padding:34px 20px 44px}
 .f-brand{font-weight:800;color:var(--pine-deep);margin-bottom:12px}
 .f-info{font-size:13px;color:var(--ink-soft);line-height:1.9}
-.f-links{margin-top:14px;font-size:13px;font-weight:600;display:flex;gap:16px}
+.f-links{margin-top:14px;font-size:13px;font-weight:600;display:flex;flex-wrap:wrap;gap:16px}
 .f-links a:hover{color:var(--pine)}
 .result{max-width:560px;margin:0 auto;padding:80px 20px;text-align:center}
 .result .icon{font-size:44px;margin-bottom:14px}
