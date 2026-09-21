@@ -29,6 +29,20 @@ const SESSIONS = [
     deadlineAt: '2026-10-05T19:30:00+09:00',
     desc: '10월 매주 화요일, 총 4회의 초급 그룹 러닝에 참여합니다. 15,600원을 한 번 결제하면 10월 6·13·20·27일 모임이 모두 포함됩니다. 다음 차수는 자동 결제되지 않습니다.',
     grad: ['#233D65', '#829CC2']
+  },
+  {
+    ...RUNNING, id: 'running-weekend-term-1', productType: 'term', programId: 'running-weekend-october', termNumber: 1,
+    title: '10월 토요일 아침 러닝 — 1차수 3회', price: 11700,
+    purchaseScope: '차수형 · 1차수 · 총 3회 참여',
+    place: '서울 영등포구 여의도한강공원 — 여의나루역 2번 출구 앞 지상 집결, 08:50 출석 확인',
+    meetings: [
+      { startAt: '2026-10-10T09:00:00+09:00', endAt: '2026-10-10T10:30:00+09:00' },
+      { startAt: '2026-10-17T09:00:00+09:00', endAt: '2026-10-17T10:30:00+09:00' },
+      { startAt: '2026-10-24T09:00:00+09:00', endAt: '2026-10-24T10:30:00+09:00' }
+    ],
+    deadlineAt: '2026-10-09T09:00:00+09:00',
+    desc: '10월 토요일 아침, 초급 페이스로 함께 5km를 달리는 3회 과정입니다. 11,700원을 한 번 결제하면 10월 10·17·24일 모임이 모두 포함됩니다. 다음 차수는 자동 결제되지 않습니다.',
+    grad: ['#865020', '#D8AE76']
   }
 ];
 function dateParts(value) {
@@ -68,7 +82,7 @@ function saleLabel(s, now = Date.now()) {
 }
 if (typeof module !== 'undefined') module.exports = { SESSIONS, SALE_LIMITS };
 function svgArt(s) {
-  return `<div class="session-art" style="background:linear-gradient(135deg,${s.grad[0]},${s.grad[1]})"><span>${s.productType === 'term' ? '차수형 · 4회' : '단발형 · 1회'}</span><strong>함께하는 ${s.tag}</strong><small>${s.purchaseScope}</small></div>`;
+  return `<div class="session-art" style="background:linear-gradient(135deg,${s.grad[0]},${s.grad[1]})"><span>${s.productType === 'term' ? '차수형' : '단발형'} · ${s.meetings.length}회</span><strong>함께하는 ${s.tag}</strong><small>${s.purchaseScope}</small></div>`;
 }
 function won(n) { return n.toLocaleString('ko-KR') + '원'; }
 function getSession() { return SESSIONS.find(s => s.id === new URLSearchParams(location.search).get('id')); }
