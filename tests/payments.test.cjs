@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { service, validateProduct, config, unseal } = require('../netlify/lib/payment.cjs');
+const { service, validateProduct, config, seal, unseal } = require('../netlify/lib/payment.cjs');
 const clock = Date.parse('2026-09-21T12:00:00+09:00');
 const env = { PAYMENTS_ENABLED:'true', TOSS_CLIENT_KEY:'test_gck_shop', TOSS_SECRET_KEY:'test_gsk_shop', TOSS_MID:'spacew90od', TOSS_TAX_MODE:'exempt', ORDER_ENCRYPTION_KEY:Buffer.alloc(32, 7).toString('base64') };
 const product = { id:'running', productType:'single', host:'테스트 호스트', place:'테스트 장소', title:'검증용 러닝', saleStatus:'open', price:3900,
@@ -23,12 +23,18 @@ function fixture(mode='ok', testProduct=product, overrides={}) {
     if(options.method==='GET') return {ok:!!completed,json:async()=>completed || {code:'NOT_FOUND_PAYMENT'}};
     calls++; const b=JSON.parse(options.body);
     if(mode==='network') throw Error('timeout');
-    completed={...b,totalAmount:b.amount,currency:'KRW',mId:mode==='mid'?'other':settings.TOSS_MID,
+    completed={...b,totalAmount:b.amount,currency:'KRW',mId:mode==='mid'?'other':(settings.TOSS_MODE==='live'?'spacew90od':'tspacew90od'),
       taxFreeAmount:mode==='tax'?123:(testProduct.taxType==='exempt'?b.amount:0),
       status:mode==='waiting'?'WAITING_FOR_DEPOSIT':'DONE',approvedAt:new Date(clock).toISOString(),method:'카드'};
     return {ok:true,json:async()=>completed};
   };
   return {api:service({store,env:settings,fetcher,now:()=>clock+elapsed,products:[testProduct],policy}),records,
+    seedApprovedLegacy(o){
+      const entry=records.get(o.orderId),saved=unseal(entry.data,settings.ORDER_ENCRYPTION_KEY);
+      delete saved.merchantId;saved.paymentKey=o.paymentKey;saved.status='CONFIRMING';
+      entry.data=seal(saved,settings.ORDER_ENCRYPTION_KEY);
+      completed={orderId:o.orderId,paymentKey:o.paymentKey,totalAmount:o.amount,currency:'KRW',mId:'tspacew90od',taxFreeAmount:testProduct.taxType==='exempt'?o.amount:0,status:'DONE',approvedAt:new Date(clock).toISOString(),method:'카드'};
+    },
     calls:()=>calls, advance:ms=>{elapsed+=ms;}, failSave:()=>{failSave=true;}};
 }
 async function order(f){const o=await f.api.create(input);return {...o,paymentKey:'payment-key',amount:o.amount};}
@@ -38,6 +44,19 @@ test('stores encrypted applicant and immutable product/policy snapshot; ignores 
   const stored=unseal(blob,env.ORDER_ENCRYPTION_KEY);assert.equal(stored.policy.version,policy.version);assert.equal(stored.applicant.phone,'01012345678');
 });
 test('approval and repeated confirmation only approve once',async()=>{const f=fixture(),o=await order(f);assert.equal((await f.api.confirm(o)).status,'DONE');await f.api.confirm(o);assert.equal(f.calls(),1);});
+test('already approved legacy test order reconciles after expiry without another approval',async()=>{
+  const f=fixture(),o=await order(f);f.seedApprovedLegacy(o);f.advance(31*60000);
+  const result=await f.api.confirm(o);assert.equal(result.status,'DONE');assert.equal(result.amount,3900);assert.equal(f.calls(),0);
+  await f.api.confirm(o);assert.equal(f.calls(),0);
+});
+test('test and live merchant IDs stay separate and new orders snapshot expected merchant',async()=>{
+  assert.equal(config(env).merchantId,'tspacew90od');
+  const live={TOSS_MODE:'live',TOSS_CLIENT_KEY:'live_gck_shop',TOSS_SECRET_KEY:'live_gsk_shop'};
+  assert.equal(config({...env,...live}).merchantId,'spacew90od');
+  const f=fixture(),o=await order(f);assert.equal(unseal(f.records.get(o.orderId).data,env.ORDER_ENCRYPTION_KEY).merchantId,'tspacew90od');
+  const wrong=fixture('ok',product,{TOSS_TEST_MID:'wrongshop'}),wo=await order(wrong);await assert.rejects(wrong.api.confirm(wo),/검증/);
+  const prod=fixture('ok',product,live),po=await order(prod);prod.seedApprovedLegacy(po);await assert.rejects(prod.api.confirm(po),/검증/);
+});
 test('tampered amount, token, payment key and unknown order rejected',async()=>{
   const f=fixture(),o=await order(f);
   await assert.rejects(f.api.confirm({...o,amount:1}),/금액/);await assert.rejects(f.api.confirm({...o,token:'wrong'}),/주문/);

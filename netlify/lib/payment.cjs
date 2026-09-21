@@ -12,7 +12,9 @@ function config(env) {
       (client[2] === 'gck' ? secret[2] !== 'gsk' : secret[2] !== 'sk') || /docs|REPLACE/.test(env.TOSS_CLIENT_KEY + env.TOSS_SECRET_KEY) ||
       env.TOSS_MID !== 'spacew90od' || Buffer.from(env.ORDER_ENCRYPTION_KEY || '', 'base64').length !== 32)
     fail('현재 온라인 결제를 이용할 수 없습니다. 고객센터 010-5062-1625로 문의해 주세요.', 503);
-  return { mode, integration: client[2] === 'gck' ? 'widget' : 'payment-window' };
+  // This shop's test API returns tspacew90od; live payments use spacew90od.
+  const merchantId = mode === 'test' ? (env.TOSS_TEST_MID || 'tspacew90od') : env.TOSS_MID;
+  return { mode, merchantId, integration: client[2] === 'gck' ? 'widget' : 'payment-window' };
 }
 function validateProduct(s, now, policy = POLICY) {
   if (!s || s.saleStatus !== 'open' || !s.host || !s.place ||
@@ -81,7 +83,7 @@ function service({ store, env, fetcher = fetch, now = Date.now, products = SESSI
   }
   return {
     async create(input) {
-      config(env);
+      const { merchantId } = config(env);
       const product = products.find(s => s.id === input.productId);
       validateProduct(product, now(), policy);
       if (!['taxable', 'exempt', 'mixed'].includes(env.TOSS_TAX_MODE) ||
@@ -94,7 +96,7 @@ function service({ store, env, fetcher = fetch, now = Date.now, products = SESSI
       if (!name || name.length > 60 || !/^01[016789]\d{7,8}$/.test(phone) ||
           email.length > 100 || (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) fail('신청자 정보를 확인해 주세요.');
       const token = randomBytes(32).toString('hex');
-      const order = { orderId: 'pp_' + randomUUID(), amount: product.price, product: structuredClone(product), taxMode: env.TOSS_TAX_MODE,
+      const order = { orderId: 'pp_' + randomUUID(), amount: product.price, product: structuredClone(product), taxMode: env.TOSS_TAX_MODE, merchantId,
         applicant: { name, phone, ...(email ? { email } : {}) }, policy: structuredClone(policy),
         agreements: input.agreements, consentAt: new Date(now()).toISOString(),
         expiresAt: now() + 30 * 60000, tokenHash: hash(token), status: 'READY' };
@@ -102,7 +104,7 @@ function service({ store, env, fetcher = fetch, now = Date.now, products = SESSI
       return { ...publicOrder(order), token };
     },
     async confirm(input) {
-      config(env);
+      const { merchantId } = config(env);
       if (!/^pp_[a-f0-9-]{36}$/.test(input.orderId || '') || typeof input.paymentKey !== 'string' ||
           !input.paymentKey || input.paymentKey.length > 200 || typeof input.token !== 'string') fail('잘못된 결제 접근입니다.');
       let entry = await read(input.orderId);
@@ -139,7 +141,7 @@ function service({ store, env, fetcher = fetch, now = Date.now, products = SESSI
         fail('결제 상태 확인이 지연되고 있습니다. 다시 결제하지 말고 아래 재확인을 이용해 주세요.', 502);
       }
       if (payment.orderId !== o.orderId || payment.totalAmount !== o.amount || payment.paymentKey !== o.paymentKey ||
-          payment.mId !== env.TOSS_MID || payment.currency !== 'KRW') fail('승인 정보 검증에 실패했습니다. 고객센터로 문의해 주세요.', 502);
+          payment.mId !== (o.merchantId || merchantId) || payment.currency !== 'KRW') fail('승인 정보 검증에 실패했습니다. 고객센터로 문의해 주세요.', 502);
       const expectedTaxFree = o.product.taxType === 'exempt' ? o.amount : 0;
       if (payment.taxFreeAmount !== expectedTaxFree) fail('승인된 과세 정보가 주문과 다릅니다. 고객센터로 문의해 주세요.', 502);
       if (payment.status !== 'DONE') fail('결제가 완료되지 않았습니다. 입금 대기·취소 등 결제 상태를 고객센터에 확인해 주세요.', 409);

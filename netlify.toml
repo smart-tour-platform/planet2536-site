@@ -6,7 +6,7 @@
 [build.environment]
   NODE_VERSION = "22"
   # Public payment settings may appear in source. Keep credentials and encryption keys scanned.
-  SECRETS_SCAN_OMIT_KEYS = "TOSS_MODE,TOSS_MID,TOSS_TAX_MODE,TOSS_PAYMENT_VARIANT,TOSS_AGREEMENT_VARIANT,PAYMENTS_ENABLED"
+  SECRETS_SCAN_OMIT_KEYS = "TOSS_MODE,TOSS_MID,TOSS_TEST_MID,TOSS_TAX_MODE,TOSS_PAYMENT_VARIANT,TOSS_AGREEMENT_VARIANT,PAYMENTS_ENABLED"
 
 [functions]
   node_bundler = "esbuild"
