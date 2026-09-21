@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         <span class="tag">${s.tag}</span>
         <h3>${s.title}</h3>
         <div class="meta">${scheduleText(s)}</div>
-        <div class="price">${won(s.price)} <small>/ 1회 참여 · ${s.saleStatus === "open" ? "모집 중" : "판매 준비 중"}</small></div>
+        <div class="price">${won(s.price)} <small>/ ${s.purchaseScope} · ${saleLabel(s)}</small></div>
       </div>
     </a>`).join("");
 });

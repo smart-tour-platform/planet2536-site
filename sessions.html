@@ -5,7 +5,7 @@
 <main>
   <section><div class="wrap">
     <h2>세션 둘러보기</h2>
-    <p class="sub">오프라인 세션을 소개합니다. 판매 준비 중인 상품은 일정 확정 후 신청이 열립니다. 모든 세션은 비회원도 신청·결제할 수 있습니다.</p>
+    <p class="sub">오프라인 세션을 소개합니다. 단발형은 1회, 차수형은 표시된 차수의 모든 모임에 참여합니다. 모든 세션은 비회원도 신청·결제할 수 있습니다.</p>
     <div class="grid" id="list-grid"></div>
   </div></section>
 </main>
@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         <span class="tag">${s.tag}</span>
         <h3>${s.title}</h3>
         <div class="meta">${s.place.split("(")[0]}<br>${scheduleText(s)} · ${s.people}</div>
-        <div class="price">${won(s.price)} <small>/ 1회 참여 · ${s.saleStatus === "open" ? "모집 중" : "판매 준비 중"}</small></div>
+        <div class="price">${won(s.price)} <small>/ ${s.purchaseScope} · ${saleLabel(s)}</small></div>
       </div>
     </a>`).join("");
 });

@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('d-schedule').textContent=scheduleText(s);
   document.getElementById('refund-summary').textContent=POLICY.summary;
   renderPurchaseInfo('d-details',s);
-  const open=s.saleStatus==='open' && POLICY.reviewed;
-  document.getElementById('sale-status').textContent=open?'비회원 신청 가능':'판매 준비 중 · 일정과 운영 정보 확정 후 신청이 열립니다.';
+  const open=saleLabel(s)==='신청 가능';
+  document.getElementById('sale-status').textContent=saleLabel(s)+' · 비회원 이용 가능';
   const buy=document.getElementById('d-buy');
-  buy.textContent=open?'참여 신청하고 결제하기':'신청 화면 미리보기';
+  buy.textContent=open?'참여 신청하고 결제하기':'신청 기간 확인';
   buy.href='checkout.html?id='+encodeURIComponent(s.id);
 });
 </script></body></html>

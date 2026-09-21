@@ -90,6 +90,8 @@ h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
 .policy-source-page{padding:20px 0;border-top:1px solid var(--line)}
 .policy-source-page .source-paragraph{white-space:pre-line;margin:12px 0}
 .policy-table{overflow-x:auto}.policy-table td{vertical-align:top;min-width:110px;overflow-wrap:anywhere}
+#d-schedule,#o-schedule,.card .meta,#order-details{white-space:pre-line}
+#o-schedule{min-width:0;font-size:13px}.checkout .info-table{width:100%}
 footer{border-top:1px solid var(--line);background:var(--bg-tint);margin-top:40px}
 footer .wrap{padding:34px 20px 44px}
 .f-brand{font-weight:800;color:var(--pine-deep);margin-bottom:12px}

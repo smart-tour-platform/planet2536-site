@@ -11,9 +11,10 @@ function renderPurchaseInfo(id, s) {
   const rows = [
     ['구매 범위', s.purchaseScope], ['신청 마감', formatDate(s.deadlineAt)],
     ['제공 종료', formatDate(s.meetings.at(-1)?.endAt)], ['호스트', s.host], ['장소', s.place],
-    ['포함 항목', s.included.join(', ') || '확정 후 안내'], ['별도 비용', s.extraCosts || '확정 후 안내'],
-    ['금액 안내', !s.taxType ? '최종 예정 금액 · 과세 구분 확인 중' : !s.taxVerified ? '최종 예정 금액 · 과세상품 설정안 (VAT 포함), 운영 과세 확인 대기' : s.taxType === 'taxable' ? '최종 결제금액 (VAT 포함)' : '최종 결제금액 (면세)'],
-    ['운영 상태', s.planNote || (s.saleStatus === 'open' ? '모집 중' : '판매 준비 중')],
+    ['포함 항목', s.included.join(', ')], ['별도 비용', s.extraCosts],
+    ['금액 안내', s.taxType === 'taxable' ? '최종 결제금액 (VAT 포함)' : '최종 결제금액 (면세)'],
+    ['모임별 환불 기준금액', won(Math.ceil(s.price / s.meetings.length)) + ' / 1회 · 누적 환불은 실제 결제잔액 이내'],
+    ['결제 방식', s.productType === 'term' ? '1차수 전체 금액을 한 번 결제합니다. 다음 차수는 별도 신청·결제하며 자동 갱신되지 않습니다.' : '표시된 모임 1회에 대해 한 번 결제합니다.'],
     ['취소·청약철회 접수', '010-5062-1625 · john@fromthehurdle.com (주문번호·신청자명·취소할 모임·사유 전달)']
   ];
   const table = document.getElementById(id);

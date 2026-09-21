@@ -3,11 +3,11 @@ const assert = require('node:assert/strict');
 const { service, validateProduct, config, unseal } = require('../netlify/lib/payment.cjs');
 const clock = Date.parse('2026-09-21T12:00:00+09:00');
 const env = { PAYMENTS_ENABLED:'true', TOSS_CLIENT_KEY:'test_gck_shop', TOSS_SECRET_KEY:'test_gsk_shop', TOSS_MID:'spacew90od', TOSS_TAX_MODE:'exempt', ORDER_ENCRYPTION_KEY:Buffer.alloc(32, 7).toString('base64') };
-const product = { id:'running', title:'검증용 러닝', saleStatus:'open', price:3900, hostVerified:true, placeVerified:true,
+const product = { id:'running', productType:'single', host:'테스트 호스트', place:'테스트 장소', title:'검증용 러닝', saleStatus:'open', price:3900,
   taxType:'exempt', taxVerified:true, included:['진행'], extraCosts:'없음', meetings:[{startAt:'2026-09-25T19:30:00+09:00',endAt:'2026-09-25T21:00:00+09:00'}], deadlineAt:'2026-09-24T19:30:00+09:00' };
 const policy = {version:'test-policy',reviewed:true,effectiveAt:'2026-09-20T00:00:00+09:00'};
 const input = {productId:'running',name:'테스트',phone:'010-1234-5678',email:'',policyVersion:policy.version,agreements:{refund:true,privacy:true,terms:true,once:true}};
-function fixture(mode='ok') {
+function fixture(mode='ok', testProduct=product) {
   const records = new Map(); let version=0, calls=0, elapsed=0, failSave=false;
   const store = {
     async getWithMetadata(key) {return records.get(key) || null;},
@@ -25,7 +25,7 @@ function fixture(mode='ok') {
     completed={...b,totalAmount:b.amount,currency:'KRW',mid:mode==='mid'?'other':env.TOSS_MID,status:mode==='waiting'?'WAITING_FOR_DEPOSIT':'DONE',approvedAt:new Date(clock).toISOString(),method:'카드'};
     return {ok:true,json:async()=>completed};
   };
-  return {api:service({store,env,fetcher,now:()=>clock+elapsed,products:[product],policy}),records,
+  return {api:service({store,env,fetcher,now:()=>clock+elapsed,products:[testProduct],policy}),records,
     calls:()=>calls, advance:ms=>{elapsed+=ms;}, failSave:()=>{failSave=true;}};
 }
 async function order(f){const o=await f.api.create(input);return {...o,paymentKey:'payment-key',amount:o.amount};}
@@ -53,8 +53,25 @@ test('draft, unreviewed policy and invalid dates blocked',()=>{
   assert.throws(()=>validateProduct(product,clock,{...policy,reviewed:false}));
 });
 test('live keys, docs keys and missing encryption key blocked',()=>{for(const change of [{TOSS_CLIENT_KEY:'live_gck_x'},{TOSS_CLIENT_KEY:'test_gck_docs_x'},{ORDER_ENCRYPTION_KEY:''}])assert.throws(()=>config({...env,...change}));});
-test('990,000 won per-payment ceiling is inclusive; unverified tax blocks sales',()=>{
+test('990,000 won per-payment ceiling is inclusive',()=>{
   validateProduct({...product,price:990000},clock,policy);
   assert.throws(()=>validateProduct({...product,price:990001},clock,policy),/990,000/);
-  assert.throws(()=>validateProduct({...product,taxVerified:false},clock,policy),/확인/);
+});
+const term = {...product,productType:'term',termNumber:1,programId:'october',price:15600,purchaseScope:'1차수 총 4회',meetings:[
+  {startAt:'2026-10-06T19:30:00+09:00',endAt:'2026-10-06T21:00:00+09:00'},
+  {startAt:'2026-10-13T19:30:00+09:00',endAt:'2026-10-13T21:00:00+09:00'},
+  {startAt:'2026-10-20T19:30:00+09:00',endAt:'2026-10-20T21:00:00+09:00'},
+  {startAt:'2026-10-27T19:30:00+09:00',endAt:'2026-10-27T21:00:00+09:00'}],deadlineAt:'2026-10-05T19:30:00+09:00'};
+test('term purchase saves and approves all four meetings for one total payment',async()=>{
+  const f=fixture('ok',term),o=await order(f);assert.equal(o.amount,15600);assert.equal(o.meetings.length,4);
+  const approved=await f.api.confirm(o);assert.equal(approved.meetingCount,4);assert.equal(approved.termNumber,1);assert.equal(f.calls(),1);
+  assert.equal(unseal(f.records.get(o.orderId).data,env.ORDER_ENCRYPTION_KEY).product.meetings.length,4);
+});
+test('term rejects overlap, missing/end-invalid meetings, excess period and unsupported later term',()=>{
+  for(const change of [{meetings:[term.meetings[0],term.meetings[0]]},{meetings:[...term.meetings,{startAt:'2026-11-05T19:30:00+09:00',endAt:'2026-11-05T21:00:00+09:00'}]},{termNumber:2},{meetings:[]}])
+    assert.throws(()=>validateProduct({...term,...change},clock,policy));
+});
+test('calendar month boundary in February is excluded even at 28 days',()=>{
+  const p={...term,deadlineAt:'2027-01-31T19:30:00+09:00',meetings:[{startAt:'2027-02-01T19:30:00+09:00',endAt:'2027-02-01T21:00:00+09:00'},{startAt:'2027-03-01T18:00:00+09:00',endAt:'2027-03-01T19:30:00+09:00'}]};
+  assert.throws(()=>validateProduct(p,Date.parse('2027-01-25T00:00:00+09:00'),policy),/1개월/);
 });

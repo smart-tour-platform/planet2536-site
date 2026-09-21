@@ -7,22 +7,38 @@ function config(env) {
   if (env.PAYMENTS_ENABLED !== 'true' || !/^test_gck_/.test(env.TOSS_CLIENT_KEY || '') ||
       !/^test_gsk_/.test(env.TOSS_SECRET_KEY || '') || /docs|REPLACE/.test(env.TOSS_CLIENT_KEY + env.TOSS_SECRET_KEY) ||
       env.TOSS_MID !== 'spacew90od' || Buffer.from(env.ORDER_ENCRYPTION_KEY || '', 'base64').length !== 32)
-    fail('결제 준비 중입니다. 고객센터로 문의해 주세요.', 503);
+    fail('현재 온라인 결제를 이용할 수 없습니다. 고객센터 010-5062-1625로 문의해 주세요.', 503);
 }
 function validateProduct(s, now, policy = POLICY) {
-  if (!s || s.saleStatus !== 'open' || !s.hostVerified || !s.placeVerified ||
-      !s.taxVerified || !['taxable', 'exempt'].includes(s.taxType) || !s.included?.length || !s.extraCosts ||
+  if (!s || s.saleStatus !== 'open' || !s.host || !s.place ||
+      !['taxable', 'exempt'].includes(s.taxType) || !s.included?.length || !s.extraCosts ||
       !policy.reviewed || !Number.isFinite(Date.parse(policy.effectiveAt)) || Date.parse(policy.effectiveAt) > now)
     fail('상품 및 정책 확인 후 신청이 가능합니다.', 409);
-  if (!Number.isSafeInteger(s.price) || s.price < 1000 || s.meetings.length !== 1)
-    fail('현재 웹 결제는 확정된 단발형 상품만 지원합니다.', 409);
+  if (!Number.isSafeInteger(s.price) || s.price < 1000 || !Array.isArray(s.meetings) || !s.meetings.length ||
+      !['single', 'term'].includes(s.productType) || (s.productType === 'single' && s.meetings.length !== 1) ||
+      (s.productType === 'term' && (s.meetings.length < 2 || s.termNumber !== 1 || !s.programId)))
+    fail('상품 유형과 결제 대상 모임을 확인해 주세요.', 409);
   if (s.price > SALE_LIMITS.maxPaymentAmount)
     fail('단발형 또는 차수 전체의 결제금액은 990,000원을 초과할 수 없습니다.', 409);
-  const { startAt, endAt } = s.meetings[0];
-  const start = Date.parse(startAt), end = Date.parse(endAt), deadline = Date.parse(s.deadlineAt);
-  if (![start, end, deadline].every(Number.isFinite) || end <= start || deadline > start - DAY ||
+  let previousEnd = -Infinity;
+  for (const m of s.meetings) {
+    const start = Date.parse(m.startAt), end = Date.parse(m.endAt);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || start < previousEnd)
+      fail('모임 일정은 시작·종료 순서대로 중복 없이 등록해야 합니다.', 409);
+    previousEnd = end;
+  }
+  const start = Date.parse(s.meetings[0].startAt), end = previousEnd, deadline = Date.parse(s.deadlineAt);
+  if (![start, end, deadline].every(Number.isFinite) || deadline > start - DAY ||
       now >= deadline || now < start - 28 * DAY || end > now + 70 * DAY)
     fail('신청 기간 또는 제공 일정이 유효하지 않습니다.', 409);
+  if (s.productType === 'term') {
+    // Calendar month in Korea, including short February and end-of-month clamping.
+    const local = new Date(start + 9 * 3600000);
+    const y = local.getUTCFullYear(), m = local.getUTCMonth();
+    const day = Math.min(local.getUTCDate(), new Date(Date.UTC(y, m + 2, 0)).getUTCDate());
+    const monthEnd = Date.UTC(y, m + 1, day, local.getUTCHours(), local.getUTCMinutes(), local.getUTCSeconds()) - 9 * 3600000;
+    if (end - start > 28 * DAY || end >= monthEnd) fail('한 차수는 최대 4주이면서 역법상 1개월 미만이어야 합니다.', 409);
+  }
 }
 function seal(value, key) {
   const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', Buffer.from(key, 'base64'), iv);
@@ -38,6 +54,7 @@ const hash = value => createHash('sha256').update(value).digest('hex');
 const publicOrder = o => ({ orderId: o.orderId, title: o.product.title, amount: o.amount,
   taxFreeAmount: o.product.taxType === 'exempt' ? o.amount : 0,
   meetings: o.product.meetings, host: o.product.host, place: o.product.place,
+  productType: o.product.productType, termNumber: o.product.termNumber, meetingCount: o.product.meetings.length,
   purchaseScope: o.product.purchaseScope, policyVersion: o.policy.version,
   status: o.status, approvedAt: o.approvedAt, method: o.method });
 function service({ store, env, fetcher = fetch, now = Date.now, products = SESSIONS, policy = POLICY }) {

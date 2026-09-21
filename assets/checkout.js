@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('o-schedule').textContent = scheduleText(s);
   renderPurchaseInfo('o-details', s);
   document.getElementById('refund-summary').textContent = POLICY.summary;
-  if (s.saleStatus !== 'open') { status.textContent = '판매 준비 중입니다. 일정·호스트·장소 확정 후 신청할 수 있습니다.'; return; }
+  if (saleLabel(s) !== '신청 가능') { status.textContent = saleLabel(s) + '입니다. 표시된 신청 기간을 확인해 주세요.'; return; }
   let widgets, ready = false, busy = false, tossAgreed = false;
   const boxes = [...document.querySelectorAll('.agree input')];
   const sync = () => { btn.disabled = busy || !ready || !tossAgreed || !boxes.every(b => b.checked); };

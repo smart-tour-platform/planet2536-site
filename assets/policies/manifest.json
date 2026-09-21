@@ -2,15 +2,15 @@
   "refund": {
     "version": "1.5",
     "path": "refund.html",
-    "sha256": "ed442dea0d493a5973e0aa075084234c6ddb7be00164e3ca3daad74e63556964",
+    "sha256": "d1ecb92dc3d98e9e27444c8c00cfa00ec9be59cf6ec9584bbea21c49e7460a59",
     "documentEffectiveDate": "2026-09-20",
-    "websiteEffectiveAt": null
+    "websiteEffectiveAt": "2026-09-21T00:00:00+09:00"
   },
   "host": {
     "version": "1.5",
     "path": "host-terms.html",
-    "sha256": "e0c96f2167644b24baf8d7eaa29c4648610b307a899becc40701d7f37da8da1c",
+    "sha256": "6a0fe7fdaef3b6b3643cf84906b775a2d1c315aa57a0e0e2ab84217b050199fc",
     "documentEffectiveDate": "2026-09-20",
-    "websiteEffectiveAt": null
+    "websiteEffectiveAt": "2026-09-21T00:00:00+09:00"
   }
 }
