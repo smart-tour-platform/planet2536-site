@@ -13,18 +13,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderPurchaseInfo('o-details', s);
   document.getElementById('refund-summary').textContent = POLICY.summary;
   if (saleLabel(s) !== '신청 가능') { status.textContent = saleLabel(s) + '입니다. 표시된 신청 기간을 확인해 주세요.'; return; }
-  let widgets, ready = false, busy = false, tossAgreed = false;
+  let widgets, paymentWindow, ready = false, busy = false, tossAgreed = false;
   const boxes = [...document.querySelectorAll('.agree input')];
   const sync = () => { btn.disabled = busy || !ready || !tossAgreed || !boxes.every(b => b.checked); };
   boxes.forEach(b => b.addEventListener('change', sync));
   try {
     const config = await paymentAPI();
     if (config.policyVersion !== POLICY.version) throw new Error('정책이 변경되었습니다. 새로고침해 주세요.');
-    widgets = TossPayments(config.clientKey).widgets({ customerKey: TossPayments.ANONYMOUS });
-    await widgets.setAmount({ currency: 'KRW', value: s.price });
-    await widgets.renderPaymentMethods({ selector: '#payment-method', variantKey: config.paymentVariant });
-    const agreement = await widgets.renderAgreement({ selector: '#agreement', variantKey: config.agreementVariant });
-    agreement.on('agreementStatusChange', data => { tossAgreed = data.agreedRequiredTerms; sync(); });
+    const toss = TossPayments(config.clientKey);
+    if (config.integration === 'payment-window') {
+      paymentWindow = toss.payment({ customerKey: crypto.randomUUID() });
+      const methods = document.getElementById('payment-window-methods');
+      methods.hidden = false; methods.disabled = false;
+      // The provider's terms are presented inside the payment window.
+      tossAgreed = true;
+    } else {
+      widgets = toss.widgets({ customerKey: TossPayments.ANONYMOUS });
+      await widgets.setAmount({ currency: 'KRW', value: s.price });
+      await widgets.renderPaymentMethods({ selector: '#payment-method', variantKey: config.paymentVariant });
+      const agreement = await widgets.renderAgreement({ selector: '#agreement', variantKey: config.agreementVariant });
+      agreement.on('agreementStatusChange', data => { tossAgreed = data.agreedRequiredTerms; sync(); });
+      const state = await agreement.getAgreementStatus();
+      tossAgreed = state.agreedRequiredTerms;
+    }
     ready = true;
     status.textContent = config.mode === 'live'
       ? '결제 수단과 구매 내용을 확인해 주세요. 결제를 완료하면 표시된 금액이 실제 청구됩니다.'
@@ -43,12 +54,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const order = await paymentAPI({ action: 'create', productId: s.id, name, phone, email,
         policyVersion: POLICY.version, agreements: { refund: true, once: true, privacy: true, terms: true } });
       sessionStorage.setItem('pp-order-' + order.orderId, order.token);
-      await widgets.setAmount({ currency: 'KRW', value: order.amount });
-      await widgets.requestPayment({ orderId: order.orderId, orderName: order.title, customerName: name,
-        ...(order.taxFreeAmount ? { taxFreeAmount: order.taxFreeAmount } : {}),
+      const request = { orderId: order.orderId, orderName: order.title, customerName: name,
+        ...(order.sendTaxFreeAmount ? { taxFreeAmount: order.taxFreeAmount } : {}),
         ...(email ? { customerEmail: email } : {}), customerMobilePhone: phone.replace(/[-\s]/g, ''),
-        successUrl: location.origin + '/success.html', failUrl: location.origin + '/fail.html' });
-    } catch (e) { status.textContent = e.code === 'USER_CANCEL' ? '결제를 취소했습니다. 다시 시도할 수 있습니다.' : e.message; }
+        successUrl: location.origin + '/success.html', failUrl: location.origin + '/fail.html' };
+      if (paymentWindow) {
+        await paymentWindow.requestPayment({ ...request, method: document.querySelector('input[name="payment-method"]:checked').value,
+          amount: { currency: 'KRW', value: order.amount }, windowTarget: 'self' });
+      } else {
+        await widgets.setAmount({ currency: 'KRW', value: order.amount });
+        await widgets.requestPayment(request);
+      }
+    } catch (e) { status.textContent = ['USER_CANCEL', 'PAY_PROCESS_CANCELED'].includes(e.code) ? '결제를 취소했습니다. 다시 시도할 수 있습니다.' : e.message; }
     finally { busy = false; sync(); }
   });
 });

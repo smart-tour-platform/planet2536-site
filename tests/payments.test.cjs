@@ -7,7 +7,8 @@ const product = { id:'running', productType:'single', host:'테스트 호스트'
   taxType:'exempt', taxVerified:true, included:['진행'], extraCosts:'없음', meetings:[{startAt:'2026-09-25T19:30:00+09:00',endAt:'2026-09-25T21:00:00+09:00'}], deadlineAt:'2026-09-24T19:30:00+09:00' };
 const policy = {version:'test-policy',reviewed:true,effectiveAt:'2026-09-20T00:00:00+09:00'};
 const input = {productId:'running',name:'테스트',phone:'010-1234-5678',email:'',policyVersion:policy.version,agreements:{refund:true,privacy:true,terms:true,once:true}};
-function fixture(mode='ok', testProduct=product) {
+function fixture(mode='ok', testProduct=product, overrides={}) {
+  const settings = {...env, ...overrides};
   const records = new Map(); let version=0, calls=0, elapsed=0, failSave=false;
   const store = {
     async getWithMetadata(key) {return records.get(key) || null;},
@@ -22,10 +23,12 @@ function fixture(mode='ok', testProduct=product) {
     if(options.method==='GET') return {ok:!!completed,json:async()=>completed || {code:'NOT_FOUND_PAYMENT'}};
     calls++; const b=JSON.parse(options.body);
     if(mode==='network') throw Error('timeout');
-    completed={...b,totalAmount:b.amount,currency:'KRW',mid:mode==='mid'?'other':env.TOSS_MID,status:mode==='waiting'?'WAITING_FOR_DEPOSIT':'DONE',approvedAt:new Date(clock).toISOString(),method:'카드'};
+    completed={...b,totalAmount:b.amount,currency:'KRW',mId:mode==='mid'?'other':settings.TOSS_MID,
+      taxFreeAmount:mode==='tax'?123:(testProduct.taxType==='exempt'?b.amount:0),
+      status:mode==='waiting'?'WAITING_FOR_DEPOSIT':'DONE',approvedAt:new Date(clock).toISOString(),method:'카드'};
     return {ok:true,json:async()=>completed};
   };
-  return {api:service({store,env,fetcher,now:()=>clock+elapsed,products:[testProduct],policy}),records,
+  return {api:service({store,env:settings,fetcher,now:()=>clock+elapsed,products:[testProduct],policy}),records,
     calls:()=>calls, advance:ms=>{elapsed+=ms;}, failSave:()=>{failSave=true;}};
 }
 async function order(f){const o=await f.api.create(input);return {...o,paymentKey:'payment-key',amount:o.amount};}
@@ -53,6 +56,23 @@ test('draft, unreviewed policy and invalid dates blocked',()=>{
   assert.throws(()=>validateProduct(product,clock,{...policy,reviewed:false}));
 });
 test('live keys, docs keys and missing encryption key blocked',()=>{for(const change of [{TOSS_CLIENT_KEY:'live_gck_x'},{TOSS_CLIENT_KEY:'test_gck_docs_x'},{ORDER_ENCRYPTION_KEY:''}])assert.throws(()=>config({...env,...change}));});
+test('individual API keys use payment window; mixed key families rejected',async()=>{
+  const keys={TOSS_CLIENT_KEY:'test_ck_shop',TOSS_SECRET_KEY:'test_sk_shop'};
+  assert.equal(config({...env,...keys}).integration,'payment-window');
+  assert.equal(config(env).integration,'widget');
+  for(const change of [{TOSS_CLIENT_KEY:'test_ck_shop'},{TOSS_SECRET_KEY:'test_sk_shop'}])assert.throws(()=>config({...env,...change}));
+  const f=fixture('ok',product,keys),o=await order(f);
+  assert.equal((await f.api.confirm(o)).status,'DONE');
+});
+test('mixed tax orders explicitly send zero or full exemption; fixed-tax stores omit SDK override',async()=>{
+  for(const taxType of ['taxable','exempt']) {
+    const f=fixture('ok',{...product,taxType},{TOSS_TAX_MODE:'mixed'}),o=await order(f);
+    assert.equal(o.sendTaxFreeAmount,true);assert.equal(o.taxFreeAmount,taxType==='taxable'?0:o.amount);
+    assert.equal((await f.api.confirm(o)).status,'DONE');
+  }
+  assert.equal((await order(fixture())).sendTaxFreeAmount,false);
+  const f=fixture('tax'),o=await order(f);await assert.rejects(f.api.confirm(o),/과세/);
+});
 test('live mode requires an explicit mode and matching live key prefixes for the merchant',()=>{
   const live = {...env,TOSS_MODE:'live',TOSS_CLIENT_KEY:'live_gck_shop',TOSS_SECRET_KEY:'live_gsk_shop'};
   assert.equal(config(live).mode,'live');

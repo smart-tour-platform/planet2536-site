@@ -5,12 +5,14 @@ const DAY = 86400000;
 function fail(message, status = 400) { throw Object.assign(new Error(message), { status }); }
 function config(env) {
   const mode = env.TOSS_MODE || 'test';
+  const client = /^(test|live)_(gck|ck)_(.+)$/.exec(env.TOSS_CLIENT_KEY || '');
+  const secret = /^(test|live)_(gsk|sk)_(.+)$/.exec(env.TOSS_SECRET_KEY || '');
   if (!['test', 'live'].includes(mode) || env.PAYMENTS_ENABLED !== 'true' ||
-      !new RegExp(`^${mode}_gck_.+`).test(env.TOSS_CLIENT_KEY || '') ||
-      !new RegExp(`^${mode}_gsk_.+`).test(env.TOSS_SECRET_KEY || '') || /docs|REPLACE/.test(env.TOSS_CLIENT_KEY + env.TOSS_SECRET_KEY) ||
+      !client || !secret || client[1] !== mode || secret[1] !== mode ||
+      (client[2] === 'gck' ? secret[2] !== 'gsk' : secret[2] !== 'sk') || /docs|REPLACE/.test(env.TOSS_CLIENT_KEY + env.TOSS_SECRET_KEY) ||
       env.TOSS_MID !== 'spacew90od' || Buffer.from(env.ORDER_ENCRYPTION_KEY || '', 'base64').length !== 32)
     fail('현재 온라인 결제를 이용할 수 없습니다. 고객센터 010-5062-1625로 문의해 주세요.', 503);
-  return { mode };
+  return { mode, integration: client[2] === 'gck' ? 'widget' : 'payment-window' };
 }
 function validateProduct(s, now, policy = POLICY) {
   if (!s || s.saleStatus !== 'open' || !s.host || !s.place ||
@@ -56,6 +58,7 @@ function unseal(value, key) {
 const hash = value => createHash('sha256').update(value).digest('hex');
 const publicOrder = o => ({ orderId: o.orderId, title: o.product.title, amount: o.amount,
   taxFreeAmount: o.product.taxType === 'exempt' ? o.amount : 0,
+  sendTaxFreeAmount: o.taxMode === 'mixed',
   meetings: o.product.meetings, host: o.product.host, place: o.product.place,
   productType: o.product.productType, termNumber: o.product.termNumber, meetingCount: o.product.meetings.length,
   purchaseScope: o.product.purchaseScope, policyVersion: o.policy.version,
@@ -91,7 +94,7 @@ function service({ store, env, fetcher = fetch, now = Date.now, products = SESSI
       if (!name || name.length > 60 || !/^01[016789]\d{7,8}$/.test(phone) ||
           email.length > 100 || (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) fail('신청자 정보를 확인해 주세요.');
       const token = randomBytes(32).toString('hex');
-      const order = { orderId: 'pp_' + randomUUID(), amount: product.price, product: structuredClone(product),
+      const order = { orderId: 'pp_' + randomUUID(), amount: product.price, product: structuredClone(product), taxMode: env.TOSS_TAX_MODE,
         applicant: { name, phone, ...(email ? { email } : {}) }, policy: structuredClone(policy),
         agreements: input.agreements, consentAt: new Date(now()).toISOString(),
         expiresAt: now() + 30 * 60000, tokenHash: hash(token), status: 'READY' };
@@ -136,7 +139,9 @@ function service({ store, env, fetcher = fetch, now = Date.now, products = SESSI
         fail('결제 상태 확인이 지연되고 있습니다. 다시 결제하지 말고 아래 재확인을 이용해 주세요.', 502);
       }
       if (payment.orderId !== o.orderId || payment.totalAmount !== o.amount || payment.paymentKey !== o.paymentKey ||
-          payment.mid !== env.TOSS_MID || payment.currency !== 'KRW') fail('승인 정보 검증에 실패했습니다. 고객센터로 문의해 주세요.', 502);
+          payment.mId !== env.TOSS_MID || payment.currency !== 'KRW') fail('승인 정보 검증에 실패했습니다. 고객센터로 문의해 주세요.', 502);
+      const expectedTaxFree = o.product.taxType === 'exempt' ? o.amount : 0;
+      if (payment.taxFreeAmount !== expectedTaxFree) fail('승인된 과세 정보가 주문과 다릅니다. 고객센터로 문의해 주세요.', 502);
       if (payment.status !== 'DONE') fail('결제가 완료되지 않았습니다. 입금 대기·취소 등 결제 상태를 고객센터에 확인해 주세요.', 409);
       o.status = 'DONE'; o.approvedAt = payment.approvedAt; o.method = payment.method;
       const saved = await write(o, { onlyIfMatch: entry.etag });

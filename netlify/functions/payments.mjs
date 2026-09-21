@@ -7,9 +7,9 @@ export default async function handler(request) {
   try {
     const url = new URL(request.url);
     if (request.method === 'GET') {
-      const { mode } = payment.config(process.env);
+      const { mode, integration } = payment.config(process.env);
       if (!policy.reviewed || !policy.effectiveAt) return json({ message: '상품 및 정책 확인 후 결제가 가능합니다.' }, 503);
-      return json({ mode, clientKey: process.env.TOSS_CLIENT_KEY, policyVersion: policy.version,
+      return json({ mode, integration, clientKey: process.env.TOSS_CLIENT_KEY, policyVersion: policy.version,
         paymentVariant: process.env.TOSS_PAYMENT_VARIANT || 'DEFAULT', agreementVariant: process.env.TOSS_AGREEMENT_VARIANT || 'AGREEMENT' });
     }
     if (request.method !== 'POST') return json({ message: '허용되지 않은 요청입니다.' }, 405);
