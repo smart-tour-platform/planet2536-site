@@ -5,6 +5,7 @@ const { SESSIONS } = require('../assets/data.js');
 const { validateProduct, service, unseal } = require('../netlify/lib/payment.cjs');
 const POLICY = require('../assets/policy.js');
 const at = Date.parse('2026-10-14T17:00:00+09:00');
+const DAY = 86400000;
 const env = { PAYMENTS_ENABLED:'true',TOSS_MODE:'test',TOSS_CLIENT_KEY:'test_ck_shop',TOSS_SECRET_KEY:'test_sk_shop',TOSS_MID:'spacew90od',TOSS_TAX_MODE:'taxable',ORDER_ENCRYPTION_KEY:Buffer.alloc(32,7).toString('base64') };
 test('submitted products reproduce expiry; live catalog keeps every original deadline', () => {
   assert.deepEqual(catalog('live',at).products, SESSIONS);
@@ -12,11 +13,19 @@ test('submitted products reproduce expiry; live catalog keeps every original dea
 });
 test('test catalog remains valid across year and leap-day boundaries without mutating real products', () => {
   const original = JSON.stringify(SESSIONS);
-  for (const now of [at, Date.parse('2026-12-31T23:59:59+09:00'), Date.parse('2028-02-29T00:00:00+09:00')]) {
+  const rollovers = SESSIONS.flatMap(p => {
+    const boundary = Date.parse(p.meetings[0].startAt) + 7 * DAY;
+    return [boundary - 1, boundary, boundary + 1];
+  });
+  for (const now of [at, Date.parse('2026-12-31T23:59:59+09:00'), Date.parse('2028-02-29T00:00:00+09:00'), ...rollovers]) {
     const c = catalog('test',now);
     assert.match(c.reviewNotice,/실제 모임 예약이나 금액 청구가 발생하지 않습니다/);
     c.products.forEach((p,i) => {
       validateProduct(p,now); assert.equal(p.price,SESSIONS[i].price);
+      const firstMeetingLead = Date.parse(p.meetings[0].startAt) - now;
+      const deadlineLead = Date.parse(p.deadlineAt) - now;
+      assert.ok(firstMeetingLead >= 21 * DAY && firstMeetingLead < 28 * DAY);
+      assert.ok(deadlineLead >= 20 * DAY && deadlineLead < 27 * DAY);
       assert.equal(p.meetings.length,SESSIONS[i].meetings.length);
       assert.equal(new Date(p.meetings[0].startAt).getUTCDay(),new Date(SESSIONS[i].meetings[0].startAt).getUTCDay());
       assert.equal(p.reviewSample,true);

@@ -7,9 +7,10 @@ function catalog(mode, now = Date.now(), products = SESSIONS) {
   const result = structuredClone(products);
   if (mode === 'test') {
     for (const p of result) {
-      // Preserve weekday, duration and number of meetings. Only TEST samples roll.
+      // Keep TEST samples 21-28 days ahead, within the 28-day booking window.
+      // Preserve weekday, duration and number of meetings.
       const start = Date.parse(p.meetings[0].startAt);
-      const weeks = Math.max(0, Math.ceil((now + 7 * DAY - start) / (7 * DAY)));
+      const weeks = Math.max(0, Math.ceil((now + 21 * DAY - start) / (7 * DAY)));
       const shift = weeks * 7 * DAY;
       const iso = value => new Date(Date.parse(value) + shift).toISOString();
       p.meetings = p.meetings.map(m => ({ startAt: iso(m.startAt), endAt: iso(m.endAt) }));
