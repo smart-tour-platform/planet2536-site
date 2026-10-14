@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><link rel="stylesheet" href="assets/style.css"><script src="assets/data.js"></script><script src="assets/policy.js"></script><script src="assets/purchase.js"></script><script src="assets/common.js"></script><title>세션 상세 — 플래닛피플</title></head><body>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><link rel="stylesheet" href="assets/style.css"><script src="assets/data.js"></script><script src="assets/catalog.js"></script><script src="assets/policy.js"></script><script src="assets/purchase.js"></script><script src="assets/common.js"></script><title>세션 상세 — 플래닛피플</title></head><body>
 <main><div class="wrap detail-top"><div><div class="detail-thumb" id="d-thumb"></div>
 <div class="notice"><b>서비스 제공 방식</b><br>실물 배송이 없는 오프라인 모임 참여 서비스입니다. 결제 승인이 완료되면 참여 신청이 접수됩니다. 모임 진행 확정은 모집 결과에 따라 별도로 안내합니다. 최종적으로 모임이 취소되면 해당 결제분을 전액 환불합니다.</div></div>
 <div><span class="tag" id="d-tag"></span><h1 id="d-title"></h1>
@@ -9,7 +9,8 @@
 <p>개별 결제일부터 해당 결제분 최종 모임 종료까지 최대 70일 이내에 제공합니다. 자동 정기결제는 없습니다.</p>
 <p id="sale-status" role="status"></p><a class="btn block" id="d-buy" href="sessions.html">세션 목록으로</a></div></div></main>
 <script>
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
+  try { await loadCatalog(); } catch (e) { catalogNotice(e.message); return; }
   const s=getSession();
   if(!s){document.getElementById('d-title').textContent='존재하지 않는 상품입니다';return;}
   document.title=s.title+' — 플래닛피플';

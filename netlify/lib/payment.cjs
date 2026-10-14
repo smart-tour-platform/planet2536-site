@@ -1,6 +1,7 @@
 const { randomUUID, randomBytes, createCipheriv, createDecipheriv, createHash } = require('node:crypto');
 const { SESSIONS, SALE_LIMITS } = require('../../assets/data.js');
 const POLICY = require('../../assets/policy.js');
+const { catalog } = require('./catalog.cjs');
 const DAY = 86400000;
 function fail(message, status = 400) { throw Object.assign(new Error(message), { status }); }
 function config(env) {
@@ -65,7 +66,7 @@ const publicOrder = o => ({ orderId: o.orderId, title: o.product.title, amount: 
   productType: o.product.productType, termNumber: o.product.termNumber, meetingCount: o.product.meetings.length,
   purchaseScope: o.product.purchaseScope, policyVersion: o.policy.version,
   status: o.status, approvedAt: o.approvedAt, method: o.method });
-function service({ store, env, fetcher = fetch, now = Date.now, products = SESSIONS, policy = POLICY }) {
+function service({ store, env, fetcher = fetch, now = Date.now, products = SESSIONS, policy = POLICY, catalogProvider = catalog }) {
   const read = async id => {
     const blob = await store.getWithMetadata(id, { type: 'json' });
     return blob && { order: unseal(blob.data, env.ORDER_ENCRYPTION_KEY), etag: blob.etag };
@@ -83,8 +84,11 @@ function service({ store, env, fetcher = fetch, now = Date.now, products = SESSI
   }
   return {
     async create(input) {
-      const { merchantId } = config(env);
-      const product = products.find(s => s.id === input.productId);
+      const { merchantId, mode } = config(env);
+      const current = catalogProvider(mode, now(), products);
+      const product = current.products.find(s => s.id === input.productId);
+      if (product?.reviewSample && input.catalogVersion !== current.catalogVersion)
+        fail('상품 일정이 갱신되었습니다. 상품 화면을 새로고침하고 다시 신청해 주세요.', 409);
       validateProduct(product, now(), policy);
       if (!['taxable', 'exempt', 'mixed'].includes(env.TOSS_TAX_MODE) ||
           (env.TOSS_TAX_MODE !== 'mixed' && env.TOSS_TAX_MODE !== product.taxType))

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"><link rel="stylesheet" href="assets/style.css"><script src="assets/data.js"></script><script src="assets/common.js"></script><title>플래닛피플 — 함께할 사람을 찾는 오프라인 모임 매칭</title></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"><link rel="stylesheet" href="assets/style.css"><script src="assets/data.js"></script><script src="assets/catalog.js"></script><script src="assets/common.js"></script><title>플래닛피플 — 함께할 사람을 찾는 오프라인 모임 매칭</title></head>
 <body>
 <main>
   <div class="hero"><div class="wrap">
@@ -34,7 +34,8 @@
   </div></section>
 </main>
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{
+  try { await loadCatalog(); } catch (e) { catalogNotice(e.message); return; }
   document.getElementById("home-grid").innerHTML = SESSIONS.map(s=>`
     <a class="card" href="detail.html?id=${s.id}">
       ${svgArt(s,150)}

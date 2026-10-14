@@ -28,7 +28,7 @@ function fixture(mode='ok', testProduct=product, overrides={}) {
       status:mode==='waiting'?'WAITING_FOR_DEPOSIT':'DONE',approvedAt:new Date(clock).toISOString(),method:'카드'};
     return {ok:true,json:async()=>completed};
   };
-  return {api:service({store,env:settings,fetcher,now:()=>clock+elapsed,products:[testProduct],policy}),records,
+  return {api:service({catalogProvider:(_mode,_now,items)=>({products:items}),store,env:settings,fetcher,now:()=>clock+elapsed,products:[testProduct],policy}),records,
     seedApprovedLegacy(o){
       const entry=records.get(o.orderId),saved=unseal(entry.data,settings.ORDER_ENCRYPTION_KEY);
       delete saved.merchantId;saved.paymentKey=o.paymentKey;saved.status='CONFIRMING';

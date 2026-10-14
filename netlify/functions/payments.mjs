@@ -1,6 +1,7 @@
 import { getStore } from '@netlify/blobs';
 import payment from '../lib/payment.cjs';
 import policy from '../../assets/policy.js';
+import catalogModule from '../lib/catalog.cjs';
 export default async function handler(request) {
   const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
   const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers });
@@ -9,7 +10,7 @@ export default async function handler(request) {
     if (request.method === 'GET') {
       const { mode, integration } = payment.config(process.env);
       if (!policy.reviewed || !policy.effectiveAt) return json({ message: '상품 및 정책 확인 후 결제가 가능합니다.' }, 503);
-      return json({ mode, integration, clientKey: process.env.TOSS_CLIENT_KEY, policyVersion: policy.version,
+      return json({ ...catalogModule.catalog(mode), mode, integration, clientKey: process.env.TOSS_CLIENT_KEY, policyVersion: policy.version,
         paymentVariant: process.env.TOSS_PAYMENT_VARIANT || 'DEFAULT', agreementVariant: process.env.TOSS_AGREEMENT_VARIANT || 'AGREEMENT' });
     }
     if (request.method !== 'POST') return json({ message: '허용되지 않은 요청입니다.' }, 405);

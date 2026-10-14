@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  let config;
+  try { config = await loadCatalog(); } catch (e) { document.getElementById('checkout-status').textContent = e.message; return; }
   const s = getSession(), btn = document.getElementById('pay-btn'), status = document.getElementById('checkout-status');
   if (!s) { status.textContent = '존재하지 않는 상품입니다.'; return; }
   document.getElementById('o-title').textContent = s.title;
@@ -18,7 +20,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const sync = () => { btn.disabled = busy || !ready || !tossAgreed || !boxes.every(b => b.checked); };
   boxes.forEach(b => b.addEventListener('change', sync));
   try {
-    const config = await paymentAPI();
     if (config.policyVersion !== POLICY.version) throw new Error('정책이 변경되었습니다. 새로고침해 주세요.');
     const toss = TossPayments(config.clientKey);
     if (config.integration === 'payment-window') {
@@ -52,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       sessionStorage.setItem('pp-storage-check', '1'); sessionStorage.removeItem('pp-storage-check');
       const [name, phone, email] = fields.map(f => f.value.trim());
       const order = await paymentAPI({ action: 'create', productId: s.id, name, phone, email,
-        policyVersion: POLICY.version, agreements: { refund: true, once: true, privacy: true, terms: true } });
+        catalogVersion: config.catalogVersion, policyVersion: POLICY.version, agreements: { refund: true, once: true, privacy: true, terms: true } });
       sessionStorage.setItem('pp-order-' + order.orderId, order.token);
       const request = { orderId: order.orderId, orderName: order.title, customerName: name,
         ...(order.sendTaxFreeAmount ? { taxFreeAmount: order.taxFreeAmount } : {}),
