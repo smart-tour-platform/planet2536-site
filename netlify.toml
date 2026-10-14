@@ -17,6 +17,7 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Review-Protection = "toss-20261014"
 
 [[headers]]
   for = "/assets/*"

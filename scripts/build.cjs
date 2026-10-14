@@ -1,5 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
+// Preserve the verified review path until the user confirms Toss review completion.
+require('./verify-review-freeze.cjs').verifyReviewFreeze(path.resolve(__dirname, '..'));
 require('./verify-policy.cjs');
 // Explicit public entrypoints prevent future internal HTML reports from being published.
 const pages = ['index.html', 'sessions.html', 'detail.html', 'checkout.html', 'success.html',
